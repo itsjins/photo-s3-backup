@@ -33,13 +33,17 @@ DB_BACKUP_TEMP="${DB_BACKUP_PATH}.tmp"
 trap 'rm -f "$DB_BACKUP_TEMP"' EXIT
 
 printf '%s DB dump started\n' "$(date '+%Y-%m-%d %H:%M:%S')"
-docker exec "$POSTGRES_CONTAINER" \
+if ! docker exec "$POSTGRES_CONTAINER" \
   pg_dump \
   --clean \
   --if-exists \
   --dbname="$DB_DATABASE_NAME" \
   --username="$DB_USERNAME" \
-  | gzip >"$DB_BACKUP_TEMP"
+  | gzip >"$DB_BACKUP_TEMP"; then
+  printf '%s ERROR DB dump failed; confirm Docker Desktop is running and container %s is accessible\n' \
+    "$(date '+%Y-%m-%d %H:%M:%S')" "$POSTGRES_CONTAINER"
+  exit 1
+fi
 
 gzip -t "$DB_BACKUP_TEMP"
 mv -f "$DB_BACKUP_TEMP" "$DB_BACKUP_PATH"
