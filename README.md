@@ -7,13 +7,14 @@ A simple macOS backup script for Immich.
 - Checks that the external HDD is mounted.
 - Dumps the PostgreSQL database to one fixed gzip file.
 - Syncs the Immich files to S3.
+- Sends a success or failure notification with ntfy.
 - Writes to `logs/backup.log`.
 
 The S3 sync skips `thumbs/` and `encoded-video/`. It does not use `--delete`.
 
 ## Setup
 
-You need Docker Desktop, AWS CLI, the external HDD, and a local `config.env` file.
+You need Docker Desktop, AWS CLI, the external HDD, and a local `config.env` file. Install the ntfy app and subscribe to the topic in `NTFY_TOPIC_URL`.
 
 ## Run
 

@@ -16,6 +16,29 @@ printf '%s START\n' "$(date '+%Y-%m-%d %H:%M:%S')"
 # local file
 source "${SCRIPT_DIR}/config.env"
 
+DB_BACKUP_TEMP=""
+
+finish() {
+  local status="$?"
+  local message="Photo backup failed (status ${status})"
+
+  if [[ -n "$DB_BACKUP_TEMP" ]] && ! rm -f "$DB_BACKUP_TEMP"; then
+    printf '%s ERROR could not remove temporary DB backup\n' "$(date '+%Y-%m-%d %H:%M:%S')"
+  fi
+
+  if (( status == 0 )); then
+    message="Photo backup succeeded"
+  fi
+
+  if ! curl -fsS --max-time 15 -H 'Title: Photo S3 Backup' -d "$message" "$NTFY_TOPIC_URL" >/dev/null; then
+    printf '%s ERROR ntfy notification failed\n' "$(date '+%Y-%m-%d %H:%M:%S')"
+  fi
+
+  exit "$status"
+}
+
+trap finish EXIT
+
 if ! ACTUAL_MOUNT_POINT="$(diskutil info -plist "$IMMICH_VOLUME_PATH" 2>/dev/null | plutil -extract MountPoint raw - 2>/dev/null)"; then
   printf '%s ERROR external HDD is not mounted at %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$IMMICH_VOLUME_PATH"
   exit 1
@@ -30,7 +53,6 @@ printf '%s HDD mounted at %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$IMMICH_VOLUME_P
 
 DB_BACKUP_PATH="${DB_BACKUP_DIR%/}/${DB_BACKUP_PREFIX}.sql.gz"
 DB_BACKUP_TEMP="${DB_BACKUP_PATH}.tmp"
-trap 'rm -f "$DB_BACKUP_TEMP"' EXIT
 
 printf '%s DB dump started\n' "$(date '+%Y-%m-%d %H:%M:%S')"
 if ! docker exec "$POSTGRES_CONTAINER" \
@@ -47,6 +69,7 @@ fi
 
 gzip -t "$DB_BACKUP_TEMP"
 mv -f "$DB_BACKUP_TEMP" "$DB_BACKUP_PATH"
+DB_BACKUP_TEMP=""
 printf '%s DB backup replaced: %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$DB_BACKUP_PATH"
 
 printf '%s S3 sync started\n' "$(date '+%Y-%m-%d %H:%M:%S')"
