@@ -26,7 +26,7 @@ This runs a real database backup and a real S3 sync:
 
 ## Schedule
 
-The LaunchAgent runs every Saturday at 04:00:
+The LaunchAgent runs every Saturday at 22:00:
 
 ```bash
 cp launchd/com.songjin.photo-s3-backup.plist ~/Library/LaunchAgents/
