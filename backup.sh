@@ -9,6 +9,14 @@ LOG_FILE="${SCRIPT_DIR}/logs/backup.log"
 mkdir -p "${SCRIPT_DIR}/logs"
 exec >>"$LOG_FILE" 2>&1
 
+LOCK_FILE="/tmp/com.songjin.photo-s3-backup.lock"
+exec 9>"$LOCK_FILE"
+
+if ! /usr/bin/lockf -t 0 9; then
+  printf '%s SKIPPED another backup is already running\n' "$(date '+%Y-%m-%d %H:%M:%S')"
+  exit 0
+fi
+
 trap 'status=$?; printf "%s FAILED line=%s status=%s\n" "$(date "+%Y-%m-%d %H:%M:%S")" "$LINENO" "$status"; exit "$status"' ERR
 
 printf '%s START\n' "$(date '+%Y-%m-%d %H:%M:%S')"
